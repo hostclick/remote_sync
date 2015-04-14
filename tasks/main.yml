@@ -1,0 +1,48 @@
+- name: install additional packages to remote sync content
+  yum: name={{ item }} state=present
+  with_items: rsync_pkg
+  tags: remote_sync
+  
+- name: Ensure that the directories for the app files exists
+  file: path={{ item.src_user_home }} state=directory owner={{ item.src_user }} group={{ item.src_user }} mode=0755
+  when: remote_sync_src|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync
+
+- name: Ensure that the owner of the ssh key exists
+  user: name={{ item.src_user }} home={{ item.src_user_home }} createhome=no
+  when: remote_sync_src|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync
+
+- name: Create ssh keys folder 
+  file: path={{ item.src_user_home }}/.ssh state=directory owner={{ item.src_user }} group={{ item.src_user }} mode=0744
+  when: remote_sync_src|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync
+
+- name: Copy private ssh key
+  copy: src="{{ item.private_key }}" dest={{ item.src_user_home }}/.ssh/id_rsa owner={{ item.src_user }} group={{ item.src_user }} mode=0600
+  when: remote_sync_src|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync
+
+- name: Copy public ssh key
+  copy: src="{{ item.public_key }}" dest={{ item.src_user_home }}/.ssh/id_rsa.pub owner={{ item.src_user }} group={{ item.src_user }} mode=0644
+  when: remote_sync_src|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync
+
+- name: remove known_host checking
+  template: src=ssh_config.j2 dest=/etc/ssh/ssh_config mode=0644
+  when: remote_sync_src|lower == 'true'
+  tags: remote_sync
+
+- name: Set up authorized_keys
+  authorized_key: user="{{ item.dst_user }}"
+                  key="{{ item.public_key_value }}"
+                  manage_dir=yes
+                  key_options='{{ item.key_options|default() }}'
+  when: remote_sync_dest|lower == 'true'
+  with_items: remote_sync_keys
+  tags: remote_sync

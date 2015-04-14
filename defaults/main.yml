@@ -1,0 +1,6 @@
+remote_sync_src: false
+
+remote_sync_dest: false
+
+rsync_pkg:
+  - rsync
