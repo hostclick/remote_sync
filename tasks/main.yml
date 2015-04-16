@@ -3,7 +3,11 @@
   with_items: rsync_pkg
   tags: remote_sync
   
-- name: Ensure that the directories for the app files exists
+- debug: var=remote_sync_keys
+  when: remote_sync_src|lower == 'true'
+  tags: remote_sync
+  
+- name: Ensure that the directories for the key files exists
   file: path={{ item.src_user_home }} state=directory owner={{ item.src_user }} group={{ item.src_user }} mode=0755
   when: remote_sync_src|lower == 'true'
   with_items: remote_sync_keys
